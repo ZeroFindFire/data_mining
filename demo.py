@@ -6,8 +6,8 @@ import numpy as np
 
 
 dts = dt.point(0,0,300,10,10) + dt.point(20,20,300,10,10) + dt.point(-20,60,300,10,10)
-dts = dt.point(0,0,30,5,5) + dt.circles(0,0,20,200,5)
-def test(count = 300, k = 2):
+#dts = dt.point(0,0,30,5,5) + dt.circles(0,0,20,200,5)
+def test(count = 300, k = 3):
 	global dts 
 	dt.show_pt(dts,c=dt.color(0), s= 1)
 	fc_done=cluster.DefaultDone(count)
@@ -25,9 +25,10 @@ def test(count = 300, k = 2):
 			continue 
 		dt.draw(tdts, c = dt.color(i), s = 1)
 	dt.show()
-	tree = cluster.cluster(dts,cluster.max_dsts)
+	tree = cluster.cluster(dts,k, cluster.max_dsts)
 	print "done tree"
-	sets = cluster.cut_tree(tree,k,cluster.min_cost)
+	sets = cluster.tree2sets(tree)
+	#sets = cluster.cut_tree(tree,k,cluster.min_cost)
 	print "done cut"
 	print len(sets)
 	for i in xrange(len(sets)):

@@ -77,14 +77,14 @@ def max_dsts(a,b):
 			if dst is None or dst < tdst:
 				dst = tdst
 	return dst
-def cluster(data, fc_dst=min_dsts):
+def cluster(data, nodes = 2, fc_dst=min_dsts):
 	data = np.asarray(data,dtype = np.float64)
 	sets = [[dt] for dt in data]
 	l = len(sets)
 	ld = l * (l - 1) / 2
 	dsts = [[None for j in xrange(i+1,l)] for i in xrange(l)]
 	# len(dsts) = l * (l-1) / 2
-	while len(sets)>2:
+	while len(sets)>nodes:
 		l = len(sets)
 		id = None
 		dst = None
@@ -106,7 +106,12 @@ def cluster(data, fc_dst=min_dsts):
 		dsts.pop(j)
 		sets.pop(j)
 	return sets
-
+def tree2sets(tree):
+	outs = []
+	for t in tree:
+		dts = to_list(t)
+		outs.append(dts)
+	return outs 
 def default_cost(tree):
 	if type(tree) != list:
 		return 0.0
