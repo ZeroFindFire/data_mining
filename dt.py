@@ -20,13 +20,14 @@ def show_pt(pts,c='red',s=10):
 def rand(rd):
 	return (random.random() - 0.5) * rd
 
-def circles(r,num, flat = 0.0):
+def circles(x,y,r,num, flat = 0.0):
 	outs = []
+	cx,cy = x,y
 	for i in xrange(num):
 		tr = r + rand(flat)
 		angle = random.random() * 2 * np.pi
 		x,y = tr*np.cos(angle), tr*np.sin(angle)
-		outs.append([x,y])
+		outs.append([cx+x,cy+y])
 	return outs
 
 def point(x,y, num, rx, ry):

@@ -1,28 +1,18 @@
 #coding=utf-8
 
 import dt 
-import k_mean
+import cluster
 import numpy as np 
 
-def tst_avg(dts):
-	sx = sum([dt[0] for dt in dts])
-	sy = sum([dt[1] for dt in dts])
-	l = len(dts)
-	if l == 0:
-		return 0,0
-	else:
-		l = 1.0/l
-	return sx*l, sy*l
-
-
-tst_dst =lambda a,b:np.abs(a[0]-b[0]) + np.abs(a[1]-b[1])
 
 dts = dt.point(0,0,300,10,10) + dt.point(20,20,300,10,10) + dt.point(-20,60,300,10,10)
-def test(count = 300, k = 3):
+dts = dt.point(0,0,30,5,5) + dt.circles(0,0,20,200,5)
+def test(count = 300, k = 2):
 	global dts 
-	fc_done=k_mean.DefaultDone(count)
+	dt.show_pt(dts,c=dt.color(0), s= 1)
+	fc_done=cluster.DefaultDone(count)
 
-	rst=k_mean.k_means(dts,k,fc_done)
+	rst=cluster.k_means(dts,k,fc_done)
 
 	avgs=rst[0]
 	dtss = rst[1]
@@ -35,10 +25,22 @@ def test(count = 300, k = 3):
 			continue 
 		dt.draw(tdts, c = dt.color(i), s = 1)
 	dt.show()
+	tree = cluster.cluster(dts,cluster.max_dsts)
+	print "done tree"
+	sets = cluster.cut_tree(tree,k,cluster.min_cost)
+	print "done cut"
+	print len(sets)
+	for i in xrange(len(sets)):
+		tdts = sets[i]
+		if len(tdts)==0:
+			continue 
+		dt.draw(tdts, c = dt.color(i), s = 1)
+	dt.show()
+	return sets
 """
 
 python
 from dtm import demo
-demo.test()
+rst=demo.test()
 
 """
