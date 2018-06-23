@@ -5,8 +5,8 @@ import cluster
 import numpy as np 
 
 
-dts = dt.point(0,0,300,10,10) + dt.point(20,20,300,10,10) + dt.point(-20,60,300,10,10)
-#dts = dt.point(0,0,30,5,5) + dt.circles(0,0,20,200,5)
+dts = dt.circle(0,0,30,10,10) + dt.circle(20,20,30,10,10) + dt.circle(-20,60,30,10,10)
+#dts = dt.circle(0,0,30,5,5) + dt.ring(0,0,20,200,5)
 def test(count = 300, k = 3):
 	global dts 
 	dt.show_pt(dts,c=dt.color(0), s= 1)

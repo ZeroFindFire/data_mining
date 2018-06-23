@@ -1,5 +1,5 @@
 #coding=utf-8
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import random
 import numpy as np
 def plots(pts):
@@ -7,20 +7,31 @@ def plots(pts):
 	y = [p[1] for p in pts]
 	return x,y
 
+def toplt(func, *attrs):
+	pts = func(*attrs)
+	x,y = plots(pts)
+	return x,y
+
+
 def draw(pts,c='red',s=10):
+	import matplotlib.pyplot
+	plt = matplotlib.pyplot
 	x,y = plots(pts)
 	plt.scatter(x,y,c=c,s=s)
 
 def show():
+	import matplotlib.pyplot
+	plt = matplotlib.pyplot
 	plt.show()
 
 def show_pt(pts,c='red',s=10):
 	draw(pts,c=c,s=s)
 	show()
+
 def rand(rd):
 	return (random.random() - 0.5) * rd
 
-def circles(x,y,r,num, flat = 0.0):
+def ring(x,y,r,num, flat = 0.0):
 	outs = []
 	cx,cy = x,y
 	for i in xrange(num):
@@ -30,7 +41,7 @@ def circles(x,y,r,num, flat = 0.0):
 		outs.append([cx+x,cy+y])
 	return outs
 
-def point(x,y, num, rx, ry):
+def circle(x,y, num, rx, ry):
 	outs = []
 	for i in xrange(num):
 		angle = random.random() * 2 * np.pi
@@ -39,11 +50,14 @@ def point(x,y, num, rx, ry):
 		outs.append([tx,ty])
 	return outs
 
-
-def toplt(func, *attrs):
-	pts = func(*attrs)
-	x,y = plots(pts)
-	return x,y
+def rect(x,y,num, half_w, half_h):
+	rx, ry = half_w, half_h
+	outs = []
+	for i in xrange(num):
+		tx = x + rand(rx)
+		ty = y + rand(ry)
+		outs.append([tx,ty])
+	return outs
 
 
 cls = [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]]
