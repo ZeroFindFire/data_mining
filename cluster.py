@@ -8,15 +8,31 @@ class DefaultDone:
 		pass 
 	def __call__(self,avgs, sets, old_avgs, old_sets, count):
 		if count >= self.count:
+			print "out of count"
 			return True 
 
 		for i in xrange(len(avgs)):
 			if (avgs[i]!= old_avgs[i]).sum()>0:
 				return False 
+		print "no change"
 		return True
 
 import numpy as np
-def k_means(data, k, fc_done = DefaultDone()):
+def default_dst(pts, pt):
+	tpts = np.abs(pts - pt )
+	tpts = tpts.sum(axis=1)
+	return tpts
+
+
+def kernel_dst(pts, pt):
+	ta = (pts **2).sum(axis=1) ** 2 
+	tc = (pt ** 2).sum() ** 2
+	tb = (pts * pt ).sum(axis=1) ** 2
+	rst = ta - 2 * tb + tc 
+	return rst
+
+	pass 
+def k_means(data, k, fc_done = DefaultDone(), fc_dst = default_dst):
 	data = np.asarray(data,dtype = np.float64)
 	pts = np.array(data[:k])
 	count = 0
