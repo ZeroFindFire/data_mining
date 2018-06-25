@@ -32,9 +32,21 @@ def kernel_dst(pts, pt):
 	return rst
 
 	pass 
-def k_means(data, k, fc_done = DefaultDone(), fc_dst = default_dst):
+def k_means(data, k, fc_done = DefaultDone(), fc_dst = default_dst, mx = True):
+	import random
 	data = np.asarray(data,dtype = np.float64)
-	pts = np.array(data[:k])
+	if mx:
+		pts = [data[random.randint(0,k-1)]]
+		for i in xrange(k-1):
+			tdst = np.array(0.)
+			for pt in pts:
+				ttdst = fc_dst(data, pt)
+				tdst += ttdst 
+			index = np.argmax(tdst)
+			pts.append(data[index])
+		pts = np.array(pts,dtype = np.float64)
+	else:
+		pts = np.array(data[:k])
 	count = 0
 	sets = [[] for pt in pts]
 	while True:
@@ -99,7 +111,6 @@ def cluster(data, nodes = 2, fc_dst=min_dsts):
 	l = len(sets)
 	ld = l * (l - 1) / 2
 	dsts = [[None for j in xrange(i+1,l)] for i in xrange(l)]
-	# len(dsts) = l * (l-1) / 2
 	while len(sets)>nodes:
 		l = len(sets)
 		id = None
@@ -122,6 +133,41 @@ def cluster(data, nodes = 2, fc_dst=min_dsts):
 		dsts.pop(j)
 		sets.pop(j)
 	return sets
+
+def clusters(data, nodes = 2, fc_dst=min_dsts):
+	rst = cluster(data, nodes, fc_dst)
+	return tree2sets(rst)
+
+
+def cluster_tmp(data, nodes = 2, fc_cost=None):
+	data = np.asarray(data,dtype = np.float64)
+	sets = [[dt] for dt in data]
+	l = len(sets)
+	ld = l * (l - 1) / 2
+	dsts = [[None for j in xrange(i+1,l)] for i in xrange(l)]
+	while len(sets)>nodes:
+		l = len(sets)
+		id = None
+		dst = None
+		for i in xrange(l):
+			for j in xrange(i+1, l):
+				if dsts[i][j-i-1] is not None:
+					tdst = dsts[i][j-i-1]
+				else:
+					tdst = fc_dst(sets[i],sets[j])
+					dsts[i][j-i-1] = tdst
+				if dst is None or tdst < dst:
+					id = i,j 
+					dst = tdst 
+		i,j = id
+		sets[i] = [sets[i],sets[j]]
+		dsts[i] = [None for k in xrange(i+1,l)]
+		for k in xrange(j):
+			dsts[k].pop(j-k-1)
+		dsts.pop(j)
+		sets.pop(j)
+	return sets
+
 def tree2sets(tree):
 	outs = []
 	for t in tree:

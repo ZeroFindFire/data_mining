@@ -60,7 +60,7 @@ def rect(x,y,num, half_w, half_h):
 	return outs
 
 
-cls = [[0,0,0],[0,0,1],[0,1,0],[0,1,1],[1,0,0],[1,0,1],[1,1,0],[1,1,1]]
+cls = [[0,0,0],[1,0,0],[0,1,0],[0,0,1],[0,1,1],[1,0,1],[1,1,0]]
 l = len(cls)
 for i in xrange(l):
 	cls[i] = np.array(cls[i],dtype = np.float)
