@@ -18,6 +18,41 @@ class DefaultDone:
 		return True
 
 import numpy as np
+def sqr_dst(pts, pt):
+	tpts = (pts - pt )**2
+	tpts = tpts.sum(axis=1)
+	return tpts
+def sqr_cost(data, avgs):
+	r = 0.0
+	for dt in data:
+		t = sqr_dst(avgs, dt).min()
+		r+= t
+	return r 
+class CutDone:
+	def __init__(self,data,n = 0.01, max_count = 1000):
+		self.count = max_count
+		self.data = np.array(data ,dtype = np.float64)
+		self.n = n
+		pass 
+	def __call__(self,avgs, sets, old_avgs, old_sets, count):
+		#print "shape:",self.data.shape,old_avgs.shape
+		old_cost = sqr_cost(self.data, old_avgs)
+		v_cost = sqr_cost(self.data, avgs)
+		if old_cost == v_cost:
+			print "cost:",v_cost 
+			return True 
+		if np.abs(((old_cost - v_cost) / old_cost)) < self.n:
+			print "old_cost:",old_cost,"cost:",v_cost 
+			return True 
+		if count >= self.count:
+			print "out of count"
+			return True 
+		return False
+		for i in xrange(len(avgs)):
+			if (avgs[i]!= old_avgs[i]).sum()>0:
+				return False 
+		print "no change"
+		return True
 def default_dst(pts, pt):
 	tpts = np.abs(pts - pt )
 	tpts = tpts.sum(axis=1)
@@ -31,44 +66,58 @@ def kernel_dst(pts, pt):
 	rst = ta - 2 * tb + tc 
 	return rst
 
-	pass 
 def k_means(data, k, fc_done = DefaultDone(), fc_dst = default_dst, mx = True):
 	import random
 	data = np.asarray(data,dtype = np.float64)
+	len_data = len(data)
 	if mx:
-		pts = [data[random.randint(0,k-1)]]
+		pts = [data[random.randint(0,len_data-1)]]
 		for i in xrange(k-1):
-			tdst = np.array(0.)
+			tdst = np.array([0.])
+			#print "tdst:",tdst.shape
 			for pt in pts:
 				ttdst = fc_dst(data, pt)
-				tdst += ttdst 
+				#print "ttdst:",ttdst.shape
+				tdst = tdst + ttdst 
 			index = np.argmax(tdst)
+			#print "tdst:",tdst
 			pts.append(data[index])
 		pts = np.array(pts,dtype = np.float64)
 	else:
-		pts = np.array(data[:k])
+		pts = []
+		ids = set()
+		for i in xrange(k):
+			index = random.randint(0,len_data-1)
+			while index in ids:
+				index = (index + 1) % k 
+			ids.add(index)
+			pts.append(data[index])
+		pts = np.array(pts,dtype = np.float64)
+		#pts = np.array(data[:k])
+	#print "PTS:",pts
 	count = 0
 	sets = [[] for pt in pts]
 	while True:
 		old_sets = sets 
 		sets = [[] for pt in pts]
 		for dt in data:
-			tpts = np.abs(pts - dt )
-			tpts = tpts.sum(axis=1)
+			#tpts = np.abs(pts - dt )
+			#tpts = tpts.sum(axis=1)
+			tpts = fc_dst(pts,dt)
 			id = np.argmin(tpts)
 			sets[id].append(dt)
 		old_pts = np.array(pts)
 		for i in xrange(k):
 			if len(sets[i])==0:
+				print "error len(setss[i])==0:",i
 				pts[i]=np.array([0,0],dtype = np.float64)
 				continue 
 			pts[i] = sum(sets[i]) * 1.0 / len(sets[i])
+		count +=1
 		if fc_done(pts, sets, old_pts, old_sets, count):
 			break 
-		count +=1
-	return pts, sets
-def default_dst(a,b):
-	return np.abs(a-b).sum()
+	print "COUNT:",count
+	return pts, sets, old_pts
 
 def to_list(tree):
 	outs = []
@@ -174,49 +223,7 @@ def tree2sets(tree):
 		dts = to_list(t)
 		outs.append(dts)
 	return outs 
-def default_cost(tree):
-	if type(tree) != list:
-		return 0.0
-	dts = to_list(tree)
-	l = len(dts)
-	dst = 0.0
-	for i in xrange(l):
-		for j in xrange(i+1,l):
-			dst += default_dst(dts[i],dts[j])
-	return dst * 1.0 / (l * (l-1) * 0.5)
-def min_cost(tree):
-	if type(tree) != list:
-		return 0.0
-	dts = to_list(tree)
-	l = len(dts)
-	dst = 0.0
-	for i in xrange(l):
-		dst += min([default_dst(dts[i],dts[j]) for j in xrange(l) if i!=j])
-	return dst * 1.0 / (l * (l-1) * 0.5)
-
-def cut_tree(tree, k, fc_cost = default_cost):
-	cuts = [tree]
-	outs = []
-	while len(cuts) < k:
-		nd, cst = None, None
-		for t in cuts:
-			tcst = fc_cost(t)
-			if cst is None or tcst > cst:
-				nd, cst = t, tcst 
-		if type(nd) != list:
-			break
-		if len(nd) != 2:
-			print "not right?:",nd
-			print len(cuts)
-			break
-		cuts.remove(nd)
-		cuts.append(nd[0])
-		cuts.append(nd[1])
-	for c in cuts:
-		outs.append(to_list(c))
-	return outs
-		
-
+	
 
 def judge(sets):
 	pass
