@@ -11,8 +11,21 @@ def toplt(func, *attrs):
 	pts = func(*attrs)
 	x,y = plots(pts)
 	return x,y
-
-
+def frange(base, last, step):
+	l =int( (last - base) / step)
+	lst = range(l)
+	rst = [base + it * step for it in lst]
+	return rst
+def show_line(f,rang,axis=None):
+	y = []
+	for x in rang:
+		y .append( f(x))
+	import matplotlib.pyplot
+	plt = matplotlib.pyplot
+	if axis is not None:
+		plt.axis(axis)
+	plt.plot(rang,y)
+	plt.show()
 def draw(pts,c='red',s=10):
 	import matplotlib.pyplot
 	plt = matplotlib.pyplot

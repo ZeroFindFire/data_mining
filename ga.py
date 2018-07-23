@@ -35,9 +35,10 @@ class BaseMutate(object):
 	def __call__(self, gen):
 		l = len(gen)
 		lp = int(l * self.rate)
+		lp = max(lp, 1)
 		for i in xrange(lp):
 			index = random.randrange(0, l)
-			gen[index] = rand()
+			gen[index] = self.rand()
 		return gen
 
 class OrderCross(object):
@@ -260,7 +261,7 @@ class AlterRate(object):
 		import numpy 
 		return rate + inc * numpy.log(count**2 + 1)
 	def __init__(self, rate, increment, fc_best_gen, 
-		fc_best_gen = None, max_rate = 0.5):
+		 fc_rate_cal = None, max_rate = 0.5):
 		if fc_rate_cal is None:
 			fc_rate_cal = AlterRate.default_cal
 		self.rate = rate 
@@ -277,11 +278,11 @@ class AlterRate(object):
 			self.count = 0
 		else:
 			self.count += 1
-		rate = self.fc_rate_cal(self.rate , increment , self.count)
+		rate = self.fc_rate_cal(self.rate , self.increment , self.count)
 		rate = min(rate, self.max_rate)
 		return rate 
 
-class GAEncapeC(obejct):
+class GAEncapeC(object):
 	def __init__(self, gens, num_gens, fc_select, fc_cross, fc_mutate, fc_rate_mutate):
 		#super(GAEncapeC, self).__init__(self.fc_select, self.fc_update)
 		self.__fc_select = fc_select
@@ -297,9 +298,9 @@ class GAEncapeC(obejct):
 		while len(next_gens) < self.__num_gens:
 			rand = random.random()
 			if rand < rate_mutate:
-				new_gens = list(self.__fc_mutate(gens))
+				new_gens = [self.__fc_mutate(gens)]
 			else:
-				new_gens = [self.__fc_cross(gens)]
+				new_gens = list(self.__fc_cross(gens))
 			next_gens += new_gens 
 		return next_gens 
 	def run(self, fc_stop_judge):
@@ -308,17 +309,17 @@ class GAEncapeC(obejct):
 
 class GAEncapeD(GAEncapeC):
 	def __init__(self, gens, num_gens, fc_select, fc_cross, fc_mutate, fc_best_gen, fc_rate_mutate):
-		super(GAEncapeD, self).__init__(gens, num_gens, fc_select, self.fc_cross, self.fc_mutate, self.fc_rate_mutate)
+		super(GAEncapeD, self).__init__(gens, num_gens, fc_select, self.fc_cross, self.fc_mutate, fc_rate_mutate)
 		self.__fc_best_gen = fc_best_gen
 		self.__best_gen = fc_best_gen(gens)
 		self.__fc_cross = fc_cross 
 		self.__fc_mutate= fc_mutate
 		self.__fc_rate_mutate = fc_rate_mutate
-	def fc_rate_mutate(self, gens):
+	def fc_rate_mutate(self):
 		best_gen = self.__best_gen 
-		return self.__fc_rate_mutate(gens,best_gen)
-	def fc_update(self):
-		next_gens = super(GAEncapeD, self).fc_update()
+		return self.__fc_rate_mutate()
+	def fc_update(self,gens):
+		next_gens = super(GAEncapeD, self).fc_update(gens)
 		if self.__best_gen not in next_gens:
 			next_gens.append(self.__best_gen)
 		self.__best_gen = self.__fc_best_gen(next_gens)
@@ -328,16 +329,18 @@ class GAEncapeD(GAEncapeC):
 	def __call__(self):
 		return self.best_gen()
 	def fc_cross(self, gens):
-		gens = [random.choice(gens) for i in [0,0]]
+		#print "gens:",len(gens)
+		gens = [random.choice(gens)[:] for i in [0,0]]
 		return self.__fc_cross(gens)
 	def fc_mutate(self, gens):
-		gen = random.choice(gens)
+		#print "gens:",len(gens)
+		gen = random.choice(gens)[:]
 		return self.__fc_mutate(gen)
 class GAEncapeValue(GAEncapeD):
 	def __init__(self, gens, num_gens, fc_select, fc_cross, fc_mutate, fc_rate_mutate, fc_score):
-		super(GAEncapeValue, self).__init__(gens, num_gens, self.fc_select, fc_cross, fc_mutate, self.fc_best_gen, fc_rate_mutate)
 		self.__fc_select = fc_select 
 		self.__fc_score = fc_score 
+		super(GAEncapeValue, self).__init__(gens, num_gens, self.fc_select, fc_cross, fc_mutate, self.fc_best_gen, fc_rate_mutate)
 	def fc_select(self, gens):
 		scores = self.__fc_score(gens)
 		indexs = self.__fc_select(scores)
@@ -361,7 +364,7 @@ class ScoreSelector(object):
 			rand_score = random.random() * total_score
 			for i in xrange(lgen):
 				rand_score -= scores[i]
-				if rand_score * total_score < 0.0:
+				if rand_score * total_score <= 0.0:
 					outs.append(i)
 					if num < l:
 						total_score-=scores.pop(i)
@@ -399,10 +402,11 @@ class ScoreSelector(object):
 		self.num = num 
 		self.fc_select = fc_select 
 	def __call__(self, scores):
+		#print "scores:",scores
 		indexs = self.fc_select(scores, self.num)
 		return indexs
 
-class CacheScoreCal(obejct):
+class CacheScoreCal(object):
 	def __init__(self, fc_score, cache_size = 100):
 		self.cache_size = cache_size 
 		self.fc_score = fc_score 
@@ -412,16 +416,12 @@ class CacheScoreCal(obejct):
 		indexs = []
 		for gen in gens:
 			if gen in self.caches_gen:
-				index = self.caches.index(gen)
-				self.caches_gen.pop(index)
-				score = self.caches_score.pop(index)
-				self.caches_gen.append(gen)
-				self.caches_score.append(score)
+				index = self.caches_gen.index(gen)
 			else:
 				score = self.fc_score(gen)
 				self.caches_gen.append(gen)
 				self.caches_score.append(score)
-			index = len(self.caches) - 1
+				index = len(self.caches_gen) - 1
 			indexs.append(index)
 		scores = [self.caches_score[index] for index in indexs]
 		if len(self.caches_score) > self.cache_size:
@@ -456,30 +456,60 @@ class StopJudger(object):
 		if self.same_count > self.same_loop:
 			return True 
 		return False
-demo = """
-select = ScoreSelector(ScoreSelector.rand_select, 10)
-#score = CacheScoreCal(undo,100)
-def cross(gens): #gens = [gens[0],gens[1]]
-	pass 
-def mutate(gen):
-	pass 
-class late_best_gen(object):
+
+class delay_best_gen(object):
 	def __init__(self, fc_best_gen = None):
 		self.fc_best_gen = None 
 	def bind(self,fc_best_gen):
 		self.fc_best_gen = fc_best_gen 
 	def __call__(self):
 		return self.fc_best_gen()
-fc_best_gen = best_gen()
-rate_mutate = AlterRate(0.3,0.01, best_gen_bind)
-def create_ga(gens, num_gens, fc_select, fc_cross, fc_mutate, fc_rate_mutate, fc_score, fc_best_gen = None):
-	ga = GAEncapeValue(gens, num_gens, fc_select, fc_cross, fc_mutate, fc_rate_mutate, fc_score)
+def create_ga(gens, nums_gen, fc_select, fc_cross, fc_mutate, fc_rate_mutate, fc_score, fc_best_gen = None):
+	ga = GAEncapeValue(gens, nums_gen, fc_select, fc_cross, fc_mutate, fc_rate_mutate, fc_score)
 	if fc_best_gen is not None:
 		fc_best_gen.bind(ga)
 	return ga 
-#ga = create_ga(undo, 10, select, cross, mudate, rate_mutate, score)
+demo = """
 
-#ga.run(StopJudger(10, 10, ga))
+python
+from dtm.ga import *
+import numpy as np 
+import random
+mx = np.array([
+[0,1,0],
+[0,2,0],
+[0,3,0]
+])
+def fc_score(gen):
+	global mx 
+	rst = 0
+	pos = np.array([0,0])
+	mv = np.array([[0,1],[1,0],[0,-1],[-1,0]])
+	for stp in gen:
+		pos += mv[stp]
+		if (pos <0).sum()>0:
+			return 0
+		elif (pos >= mx.shape).sum()>0:
+			return 0
+		rst += mx[pos[0],pos[1]]
+	return rst 
+
+fc_scores = CacheScoreCal(fc_score,100)
+nums_gen  = 10
+fc_select = ScoreSelector(ScoreSelector.rand_select, nums_gen)
+fc_cross = BaseCross()
+fc_mutate = BaseMutate(rand = lambda :random.randint(0,3))
+fc_best_gen = delay_best_gen()
+fc_rate_mutate = AlterRate(0.3,0.01, fc_best_gen)
+gen = [0,0,0]
+gens = [gen for i in xrange(10)]
+ga = create_ga(gens,nums_gen, fc_select, fc_cross, fc_mutate, fc_rate_mutate, fc_scores, fc_best_gen)
+ga.run(StopJudger(10)),ga.best_gen(),fc_score(ga.best_gen())
+
+
+
+
+
 """
 class AntEncape(object):
 	def __init__(self, ants_num, fc_single_ant, fc_update, fc_best_score = None):
